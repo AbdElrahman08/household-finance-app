@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+def runNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+def ksFile = rootProject.file('release.jks')
+def hasReleaseKey = ksFile.exists() && System.getenv('KS_PASS')
+
+android {
+    namespace 'com.amer.householdfinance'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.amer.householdfinance'
+        minSdk 24
+        targetSdk 34
+        versionCode runNumber
+        versionName "1.0.${runNumber}"
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile ksFile
+                storePassword System.getenv('KS_PASS')
+                keyAlias System.getenv('KS_ALIAS') ?: 'householdfinance'
+                keyPassword System.getenv('KS_PASS')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // With the repo secrets set, builds share one key and install as updates.
+            // Without them, the build is signed with a throwaway debug key.
+            signingConfig hasReleaseKey ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
